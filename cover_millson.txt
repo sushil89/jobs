@@ -1,0 +1,26 @@
+To,
+
+Hiring Manager
+Millson Technologies Inc.
+2036 Columbia St, 
+Vancouver, BC V5Y 3E1
+
+Please find enclosed mine resume for Embedded Software Engineer.
+Following are some of the high notes of my skills applicable to this job
+
+Most recently, while working with Wurldtech, I maintained and enhanced security embedded software which include writing protocol sniffer for industrial space, Hardened Deep Packet Inspection (DPI Engine) code and Strengthened  the  standard protocol to avoid potential evasion/vulnerabitie 
+While working with Redback Networks Canada, I have specialized in large scale embedded software development in B-RAS(Broadband remote access server) area.
+Lately, I have migrated NetBSD applications from 32-bit IBM Power PC platform to 64-bit Broadcom MIPS processor for next generation Cross connect route processor controlled card (XC4). 
+In the past, I have delivered custom software solutions in Telecommunication domain conforming to ISO 9001 and SEI CMM level-2, in technology area such as ATM, VoIP and x.25.
+Another area of my expertise is UNIX kernel internals and device drivers development including feature enhancements and defect  fixing in multi-processor kernel. I have done numerous performance enhancements in UNIX SVR2.0 and SVR4 code base during my tenure with C-DOT and Lucent Technologies.
+  
+My background includes extensive 'C' programming experience in Real-time operating system (RTOS) environment.
+
+Last, but certainly not least, I have strong customer support skills including but not limited to excellent oral and written proficiency, handling and prioritizing multiple tasks and work under pressure.
+
+Please let me know should you have any further question about any of above skills.
+
+Thanks
+
+Sincerely,
+Sushil

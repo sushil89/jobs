@@ -1,0 +1,17 @@
+To,
+
+Hiring Manager
+Dali Wireless (Canada) Inc.
+8618 Commerce Court
+Burnaby, BC V5A 4N6
+
+Please find enclosed mine resume for Sr. application developer on embedded Linux area. I have many areas of relevant experience such as:
+Most recently, while working with Wurldtech, I maintained and enhanced security embedded software which include writing protocol snifferfor industrial space, Hardened Deep Packet Inspection (DPI Engine) code and Strengthened  the  standard protocol to avoid potential evasion/vulnerabitie 
+While working with Redback Networks Canada, I have specialized in large scale embedded software development in B-RAS(Broadband remote access server) area.
+My background includes extensive 'C' programming experience in Real-time operating system (RTOS) environment.
+Another area of my expertise is UNIX kernel internals and device drivers development including feature enhancements and defect fixing in multi-processor kernel. I have done numerous performance enhancements in UNIX SVR2.0 code base.
+
+Please do not hesitate to contact me in case you have any questions.
+
+Sincerely,
+Sushil

@@ -1,0 +1,2627 @@
+Various phases of compilation:
+ 
+1. Lexical Analysis: this phase will read the input file and grouped the
+logically belong together characters into tokens such as identifier, key
+word, delimiters, constant etc. Each token has two attributes: Type and
+Value. During this phase tokens are also inserted in symbol table. Tool
+used to perform lexical analysis are 'lex'.
+regular expressions -->lex-->lex.yy.c--->cc-->a.out
+input src file -->a.out--> tokens ----can be feed to parser.
+ 
+2. Syntax Analysis: This phase will check that tokens are as per grammer
+rules and generates a parse tree later used by next phase of compiler to
+generate intermediate code. Tools used is 'yacc', this used LALR(1)
+parser. One can specify rules to resolve shift/reduce and reduce/reduce
+conflicts.
+ 
+3. Intermediate code generation: take parse tree and generate sequence of
+instructions in some intermediate language.
+ 
+4. Optimization (optional phase): various method like local optimization,
+constant unfolding: replacing runtime computation by compile time,
+ 
+Loop optimization: such as moving loop invarient computation to begning of
+lp, loop unrolling, loop jaming.
+ 
+Peephole optimization: such as removing extra load/store operation,
+removing multiple jump: goto L1, L1: goto L2,
+removing unnecessary operations such as x=x*1, x=x*0, x=x+0 etc.
+ 
+Reduction in strength: replace expensive operation by equivalent non expen
+sive one such as replacing multiply/divide by power of 2 by shift
+operation.
+ 
+5. Code generation: convert intrmdt code to target language.
+ 
+How to bootstrap first new compiler: Suppose we have to write compiler for
+new language 'L' on m/c A and B. First write a small compiler that
+translate
+subset of 'L' into machine language of A. We can write this compiler in any
+language which is available on m/c A say assembly language of A. Now using
+this compiler and subset of language L we can write the compiler of
+language
+'L'.
+ 
+r(ight-hand-side)-value and l(eft-hand-side)-value:
+For identifier r-value is value stored in identifier and l-value is
+location where value is stored. Ex
+int b, a = 5; so r-value of a is 5 and l-value is address of a.
+ 
+b = a; so r-value of a is assigned in l-value of b.
+ 
+ 
+Parameter passing:
+Call by value : r-value of param is passeed to fn. 'C' used this.
+Call by reference: l-value of param is passed to fn e.x. VAR in PASCAL, reference type
+in C++
+ 
+ 
+ 
+ANSI fn prototype
+ 
+#ifdef __STDC__
+int fn(int, int);
+#else
+int fn();
+#endif
+ 
+OR
+ 
+#if defined(__STDC__) || defined(__cplusplus)
+# ifndef _PROTOTYPES
+# define _PROTOTYPES
+# endif /* _PROTOTYPES */
+#endif /* __STDC__ || __cplusplus */
+ 
+#if defined(_PROTOTYPES)
+#define __(arg) arg
+#else
+#define __(arg) ()
+#endif
+ 
+example:
+ 
+int fn __((int,int));
+ 
+Some Debug help
+ 
+#ifdef DEBUG
+#define ASSERT(condition) if (!(condition)) { \
+printf("Assert failed (condition)in file %s at line
+%d\n",\
+__FILE__, __LINE__);\
+}
+#else
+#define ASSERT(condition)
+#endif
+ 
+#ifndef STATIC
+#ifdef DEBUG
+#define STATIC
+#else
+#define STATIC static
+#endif
+#endif
+ 
+Some tricky ones
+================
+1. EXOR
+ 
+a ^ b = ~a.b + a.~b where ^ is EXOR, ~ is NOT, . is AND and + is OR
+a^0 = a
+a^1 = ~a /* this can be used to invert any bit */
+a^a = 0 /* this can be used to reset */
+(a^b)^a = b
+(a^b)^b = a
+So how to swap two varaibles w/t temporary variable
+a = a^b
+b = a^b /* since a is a^b so a^b^b ==> a */
+ 
+* Function pointer
+Declare a pointer to function
+int (*fun_ptr)(int, int)
+ 
+Assign an address to function ptr
+int some_fun(int, int);
+fun_ptr = some_fun; //short form
+fun_Ptr = &some_fun; // long form
+ 
+Comapring the function pointer
+if (fun_ptr == &some_fun) ...
+ 
+Calling function using function pointer
+fun_ptr(a, b); // short form
+(*fun_ptr)(a, b); //Long form
+ 
+How to pass a function ptr as an argument
+int some_function(int (*fun_ptr_as_arg)(int, int), ...)
+typedef int (*FUN_PTR)(int, int)
+int some_function (FUN_PTR, ...)
+ 
+How to dacl function returning pointer to a function taking
+one int type argument and returning float
+float (*some_function(double, ..))(int);
+Or
+typedef float (*FUN_PTR)(int);
+FUN_PTR some_function(double, ...);
+ 
+a = a^b /* since a is a^b and now b is a coz of previous step so
+(a^b)^a==>b */
+ 
+* Decl an array of N pointers to function returning
+pointers to functions returning pointers to characters?
+ 
+char *(*(*a[N])())();
+OR
+typedef char *pc /* pointer to char */
+typedef pc fpc(); /* function returning pointer to char */
+typedef fpc *pfpc; /* pointer to above */
+typedef pfpc fpfpc(); /* function returning ... */
+typedef fpfpc *pfpfpc; /* pointer to ... */
+typedef pfpfpc a[N]; /* array of ... */
+ 
+* How to decl fn prototype taking variable arguments
+These are called variadic (variable adicity/rank/type).
+ 
+Function that take the variable number of arguments
+must have at least one formal parameter.
+ 
+Why we need variadic functions:
+In some cases a function can handle any number of values by operating on
+all of them as a block. For example, consider a function that allocates a
+one-dimensional array with malloc to hold a specified set of values.
+This operation makes sense for any number of values, as long as the
+length of the array corresponds to that number.
+Without facilities for variable arguments, you would have to define
+a separate function for each possible array size.
+ 
+ 
+E.g. int sum(int x, ...)
+here ellipsis tells compiler to allow zero or more arguments
+of any type.
+ 
+#include <stdarg.h>
+va_list arg_p;
+ 
+va_start(arg_p, last_formal_param)
+lval_type = va_arg(arg_p, type) /* type could be int, double etc. */
+va_end(arg_p)
+ 
+Sample example
+1)
+ 
+int sum(int a, b, c, num_of_optional_param, ...) {
+va_list arg_ptr; int i, total;
+va_start(arg_ptr, num_of_optional_param);
+for(i=0; i<num_of_optional_param, i++)
+total += va_arg(arg_ptr, int);
+va_end(arg_ptr);
+}
+In above example I assume that all of optional params are
+"int" type. If that is not the case one has to pass the
+format_string as last formal param and function will
+scan the type stored in format string and then call
+va_arg with appropriate type.
+ 
+2) Another example is using vprintf
+ 
+int myprintf(const char *fmt_string, ...) {
+va_list arg_ptr;
+ 
+va_start(arg_ptr, fmt_string);
+vprintf(fmt_string, arg_ptr)
+va_end(arg_ptr);
+}
+ 
+3) Another way is to use macro supporting
+variable number of args.
+ 
+#define myprintf(a, b, c, rest...) \
+printf(fmt_string, ##rest);
+ 
+4)
+int *allocate(num, ...) {
+va_list arg_ptr;
+int_ptr = malloc(sizeof(int)*num);
+va_start(arg_ptr, num);
+for (i=0; i<num; i++)
+*(int_ptr+i) = va_arg(arg_ptr, int);
+ 
+va_end(arg_ptr);
+return(int_ptr);
+}
+ 
+* How to decl pointer to constant data type
+const data-type *pointer-name
+You can change the pointer but not content of pointer.
+ 
+* How to decl constant pointer to data type
+data-type *const pointer-name = &same-data-type-name;
+You can't change the pointer but can change the content of pointer.
+ 
+* Read the following decl
+const int * &i;
+from right to left, i is reference to a pointer to a constant integer.
+ 
+*How to invert nth (say 10th) bit in given bit-pattern
+EXOR the given bit-pattern with 2 to-the-power 10 (a^1 = ~a)
+ 
+* How to reset n'th bit
+So we need to find a mask in witch all bit are 1 except n'th
+bit and then AND this mask with given bit-pattern to
+reset it.
+ 
+Now how to find such mask!
+The mask will looks like 1111101111
+just invert this 0000010000
+So, we can make inver of such mask by shift.
+And then invert it to get the mask.
+ 
+Thus to invert n'th bit mask will be ~(1<<n)
+ 
+var = var & mask
+ 
+* Write non-looping C expression to find out given number
+is power of 2.
+ 
+if x&(-x) == x then x is power of 2
+however this also identify 0 as power of 2 so to eleminate that
+check if ((x&(-x)) == x) && x) then x is power of 2
+ 
+* How to increment a int variable without using ++.
+use var = var +1 :)
+OR
+var = -(~var) because -(~var) is ~~var +1 => var+1 assuming
+negative numbers are represented by 2's complement method.
+OR
+cast var to pointer to char, index to 2nd element of this i.e [1]
+and cast it back to integer. (int) &( ((char *)var)[1] )
+OR
+struct foo { char a, b};
+(int) &( ((struct foo *)var)->b )
+ 
+* What is Parity: way to detect error in transmission.
+Odd Parity: parity bit is set if number of 1's are odd. Use exor to compute this
+Even Parity Parity bit is set if number of 1's are even.
+ 
+*In link list node struct, suggest any alternate way to store next field
+Suppose we knew the address of Header, so exor the next node address with
+header address and store in next field. To Generate the next node, exor
+this next field again with header address
+(Header_Address ^ Node_Address) ^ Header_Address ===> Node_address
+ 
+ 
+* What kind fns can't be make inline?
+recursive or if taking address of function.
+function is not small
+?? If function using static variable.
+ 
+* Basic data type in C are
+int (natural m/c word),
+float (floating point),
+double (double precision floating point)
+ 
+Type specifier is short and long,
+ 
+Type qualifier is const and volatile
+ 
+So long long >= long int >= int >= short int
+and long double (extra precision) >= double >= float
+(double is same as long float but "long float" is not used
+and there is no short float)
+ 
+* use of volatile
+- Use volatile type qualifier for objects of automatic storage duration
+that are modified between setjmp() and longjmp().
+E.g.,
+some_function()
+{
+int v;
+jmp_buf buf;
+ 
+v = 3;
+ 
+if (setjmp(buf)) {
+printf("val is %d\n", v);
+return;
+}
+ 
+// compiler may optimized this as v is not being used after this point!
+// and printf will print 3 which is wrong.
+// Use volatile to avoid the problem.
+v = 10;
+longjmp(buf, 1);
+ 
+}
+ 
+- When writing driver code, use volatile for memory mapped var
+to avoid possible compilation obtimization.
+ 
+* printf %[-][width][.precision]X
+- is for left justification
+ 
+width these many spaces will be made available for the the object.
+Infact this is the minimum width, if object need more space
+it will spill out of this space.
+ 
+.precision this has different meaning for different formatting character(X)
+For floating point, this indicates the number of digits printed
+after the decimal. For string, this will specify the maximum
+characters to be printed.
+Examples
+========
+42 %6d | 42|
+42 %-6d |42 |
+324 %10d | 324|
+-1 %-10d |-1 |
+-1 %1d |-1|(overspill)
+ 
+'z' %3c | z|
+'z' %-3c |z |
+ 
+2.71828 %10f | 2.71828| Only 10 spaces, including decimal
+2.71828 %10.2f | 2.71| 10+ one space(for decimal)
+2.71828 %-10.2f |2.71 |
+ 
+2.71828 %2.4f |2.7182|(overspill)
+ 
+2.718 %.4f |2.7180|
+2.718 %10.5f | 2.71800|
+ 
+2.71828 %10e |2.71828e+00|
+2.71828 %10.2e | 2.17e+00|
+2.71828 %10.2g | 2.71|
+ 
+"printf" %s |printf|
+"printf" %10s | printf|
+"printf" %2s |printf|(overspill)
+"printf" %5.3s | pri|
+"printf" %-5.3s |pri |
+"printf" %.3s |pri|
+ 
+* Give example of operator overloading in C
+"*" multiplication and content of address
+"&" Bit wise AND and address
+"-" binary subtraction and unary negation
+"." member of and decimal
+ 
+* Examples of compile time operators
+sizeof, +, -, * etc.
+ 
+* Operator precedence and associativity
+Precedence - relative priority of operator
+Associativity - order of evaluation when multiple operators are combined.
+ 
+Typically binary operators have left to right or left associativity
+(exception are = += -= *= /= <<= >>= |= &= ^= are right associative)
+ 
+The typical unary operators are right to left or right associative
+ 
+For example + and - have the same precedence, so how do we evaluate the following?
+ 
+z = y-2+x;
+ 
+We know that + and - associate the left to right, this function is the same as z=(y-2)+x;.
+Meaning the subtraction is performed first because it is more to the left than the addition.
+Most operations associate left to right, but the following table illustrates that some
+operators associate right to left
+ 
+Precedence Associativity
+ 
+highest () [] . -> ++(postfix) --(postfix) left to right
+ 
+++(prefix) --(prefix) !~ sizeof(type) +(unary) -(unary) &(address) *(dereference) right to left
+ 
+* / % left to right
++ - left to right
+<< >> left to right
+< <= > >= left to right
+== != left to right
+& left to right
+^ left to right
+| left to right
+&& left to right
+|| left to right
+ 
+? : right to left
+ 
+= += -= *= /= %= <<= >>= |= &= ^= right to left
+lowest , left to right
+ 
+Also remember postfix increment such as p++ will increment the p and return the old (before
+increment) value.
+ 
+some tricky one
+ 
+1) *p++ will be *(p++) i.e. p is incremented first (as postfix ++ has higher precedence than *),
+and then the old value of p is return and that old value is dereferenced by *.
+say p is pointer to int, and int with 0xA000 and content of 0xA000 is 5
+then *p++ will move the p to 0xA000+4 and also dereferenced the value at 0xA000.
+ 
+2) 1+5&4==3
+ 
+so (1+5) & (4==3)
+ 
+3) a->b.c++
+all operators have same precedence, so use associativity which is L->R
+So, ((a->b).c)++
+ 
+4) i =2;
+    i = i++;
+The output is undefined as per ANSI and unspecified as per K&R.
+the post increment operator has a side effect, it increment the value of i and return the old value,
+so if i is referenced anywhere else in the expression it lead to undefined behavior.
+As it depends on compiler to when to store the post increment value --- after evaluation of whole expression/statement or immediately
+after post increment.
+ 
+* Arithmetic Conversion
+(Rule of thumbs:
+1. Lower type is promoted to higher type.
+2. If lower type is unsigned and higher type is signed, check if all
+values of lower type can be stored in signed higher type. If so
+lower type unsigned is promoted to signed. If not both are converted
+to unsigned lower type.
+3. If two operand are same type, but one is signed and other is unsigned
+then both are promoted to unsigned type.
+4. Signed values are always sign extended when promoted to larger type
+even if resulting type is unsigned.
+5. Unsigned values are not sign extended when promoting to larger type.
+ 
+6. Integral promotion rules as per K&R
+Conversion of char and short type to int type
+unsigned char -> unsigned int
+signed char -> signed int
+unsigned short-> unsigned int
+signed short -> signed int
+ 
+However after publication of K&R a serious divergence has occurred among implementers
+of C towards integral promotion rules. One camp support unsigned preserving and
+second camp support value preserving.
+ 
+The unsigned preserving is same as what K&R mentioned.
+ 
+The value preserving rule promotes unsigned char and short to signed int,
+if signed int can represent all the values of the original type otherwise
+unsigned int. Thus if execution env represents short in smaller space than
+int then unsigned short will be signed int; otherwise unsigned int.
+ 
+E.g.:
+unsigned short a=1;
+unsigned long b = (a << 31);
+ 
+PROBLEM: The expected result (and the result from a 32-bit executable) is 0x80000000.
+The result generated by a 64-bit executable, however, is 0xffffffff80000000.
+ 
+CAUSE: Why is this sign extended? First, when the shift operator is invoked, the
+variable a is promoted to a variable of type int. Because all values of a short
+can fit into a signed int, the result of this promotion is signed
+(value preserving camp).
+ 
+Second when the shift completed, the result was stored into a long.
+Thus, the 32-bit signed value represented by (a << 31) was sign
+extended (rule 4) when it was promoted to a 64-bit value
+(even though the resulting type is unsigned).
+ 
+SOLUTION: To fix this problem, you should cast a to long prior to the shift.
+Thus, the short will be promoted only once---this time, to a 64-bit type
+(at least when compiled as a 64-bit executable).
+ 
+Another example
+int a=-2;
+unsigned int b=1;
+long c = a + b;
+ 
+PROBLEM: When executed on a 32-bit architecture, the result is -1 (0xffffffff).
+When run on a 64-bit architecture, the result is 4294967295 (0x00000000ffffffff),
+which is probably not what you were expecting.
+ 
+CAUSE: Why does this happen? First, the two numbers are added.
+A signed value plus an unsigned value results in an unsigned value (rule 3).
+Next, that value is promoted to a larger type. This promotion does not
+cause sign extension (rule 5).
+ 
+SOLUTION: To fix this in a 32-bit-compatible way, cast b to long.
+This forces the non-sign-extended promotion of b to a 64-bit type
+prior to the addition, thus forcing the signed integer to be promoted
+(in a signed fashion) to match. With that change, the result is the expected -1.
+ 
+)
+ 
+ 
+* Doubly link list
+How to invert the doubly list - hint just swap the next and previous pts
+ 
+node *current, *temp;
+current = head;
+ 
+while(current) {
+ 
+temp = current->next; /* save the next in temp */
+current->next = current->prev; /* modify the next field as it is already saved */
+current->prev = temp;
+ 
+current = temp;
+ 
+}
+/* Re-arrange the head and tail pointers */
+current = head;
+head = tail;
+tail = current;
+ 
+* How to invert the single list
+ 
+node *prev, *current *tmp;
+prev = NULL;
+current = head;
+while (current) {
+    head = current;
+ 
+    tmp = current->next;
+    current->next = prev;
+    prev = current;
+ 
+    current = tmp;
+}
+ 
+Recursive version
+node *reverse(node *current)
+{
+if (current->next == NULL)
+return current;
+temp = reverse(current->next);
+tmp->next = current;
+return(current);
+}
+ 
+*Doubly Circular link list
+ 
+typedef struct node {
+node * next;
+node * previous;
+int info;
+} node_t;
+ 
+node_t header;
+ 
+init: header.next = header.previous = &header;
+ 
+add:
+new.next = header.next;
+new.previous = &header;
+header.next.previous = &new;
+header.next = &new;
+ 
+Advantage is that no need to take care of any special case
+like adding when list is null etc!
+ 
+del:
+cur.previous.next = cur.next;
+cur.next.previous = cur.previous;
+ 
+Again no need to take care of any special case!
+ 
+*Why Need doubly link list
+Addition and Deletion easy, no need to keep extra back pointer.
+Error recovery in case one of the pointer got corrupted.
+Can do certain audits by moving forward with next link and coming back
+with previous field and vice versa!
+ 
+if (cur->next->previous != cur) OR (cur->previous->next != cur)
+Panic/Audit Failed
+ 
+One can also start counting elements in first using
+"next" pointer and then using "previous" pointer +
+some check to avoid infinite loop. The two counts
+is same in healthy link list.
+ 
+One can use "node_t" in any structure, to make link
+list of such structure. For example
+ 
+typedef some_struct {
+node_t list;
+other fields...
+} s_some_t;
+ 
+LINK_INIT(node_t *list) { list->next = list->prev = list;}
+ 
+When initialize the structure, use
+LINK_INIT(&struct_p->list)
+ 
+It is easier if we stuck node_t as first field of
+structure, as in this case one can cast "next" field
+to struct type to get pointer to structure where
+this element is. Other wise, one can write COERCE
+macro to get address of base of structure by giving
+typedef of struct + field name and pointer. For example
+ 
+#define COERCE(PTR, TYPE, FIELD) \
+(TYPE *) ( (UINT32)(PTR) - (UINT32)&( (TYPE *)(NULL)->FIELD ) )
+ 
+So for example, if "list" field is defined as as follows
+typedef some_struct {
+other fields...
+node_t list;
+other fields ..
+} s_some_t;
+ 
+node_t *ptr;
+say ptr = some_struct_ptr->list.next;
+while (ptr != &some_struct_ptr->list) {
+ptr1 = COERCE(ptr, s_some_t, list);
+....
+ptr = ptr->next;
+}
+ 
+* How to detect cycle in link list
+This can be done using Floyd's cycle-finding algorithm.
+It is also called the "tortoise and the hare" algorithm.
+ 
+slow_ptr = fast_ptr = head;
+cycle = 1;
+ 
+do {
+ 
+if (fast_ptr->next) {
+    fast_ptr = fast_ptr->next->next;
+    slow = slow ->next;
+}
+else
+     cycle = 0;
+} while ((cycle) && (slow_ptr != fast_ptr));
+ 
+Also check http://blog.ostermiller.org/find-loop-singly-linked-list for good discussion of the problem.
+ 
+* Big Endian Vs Little Endian
+Big Endian most significant byte is stored at lowest address
+Processors supporting big endian are Motorola
+Advantage is in networking as MSB can carry routing info
+also one can read sign bit in first byte if using assembly.
+ 
+Little Endian MSB in highest address, Processor using are Intel.
+Advantage is that reading word is easier i.e. add+0 most significant byte
+add+1 least significant byte ..
+ 
+* How to find out endianness of a machine
+typedef enum { FALSE=0, TRUE} BOOL;
+BOOL isBigEndian()
+{
+unsigned int x = 0xAB; //0x000000AB in Big Endian, 0xAB000000 in little
+ 
+return (((char *)&x)[0] == 0xAB) ? 0:1);
+}
+*How to Convert big endian word(int) to little endian
+#define SWAP_LONG(x) \
+( ((unsigned int)(x) << 24) | \
+(((unsigned int)(x) & 0xff00) << 8) | \
+(((unsigned int)(x) >> 8) & 0xff00) | \
+((unsigned int)(x) >> 24) )
+ 
+#define SWAP_SHORT(x) \
+( ((unsigned short)(x) << 8) | \
+((unsigned short)(x) >> 8))
+#define SWAP_SHORT(x) \
+( (x << 8) | ((x >> 8) & 0xff))
+ 
+Things to remember
+When shifting right, sign bit got filled in i.e. 0xAABB shifting it by
+8 bits to right, sign bit(1) got filled in and it become FFAA so to avoid
+this either cast the original number to unsigned and then perform the shift
+or mask the bits after right shift.
+ 
+How to swap all the bits in a byte (12345678 to 87654321)
+char swap_all_bits(char x)
+{
+int index;
+char y;
+ 
+y = 0;
+ 
+/* Take Least significant bit
+Store into temp variable
+Shift the temp variable one bit left
+*/
+for (index=0; index < sizeof(char); index++) {
+y = y << 1;
+y |= (x>>index) & 1;
+}
+ 
+return(y);
+}
+ 
+* Fn to allocate memory (related to pointers)
+int getbuf(void **aof_ptr, int size)
+{
+void *tmp_ptr;
+ 
+if (tmp_ptr = malloc(size)) {
+*aof_ptr = tmp_ptr;
+return(0);
+}
+ 
+return(1); /* error */
+}
+ 
+void freebuf(void **aof_ptr)
+{
+free(*aof_ptr);
+*aof_ptr = NULL;
+return;
+}
+ 
+We must pass address of pointer in both the above fn as we are
+modifying the pointer itself!
+ 
+* What is the difference b/w heap and stack
+* How to represent -ive numbers
+ 
+Negative numbers are represented by 2's complement method i.e.
+Take 1's complement and add 1
+Example: To get -1 take 2's complement of 1
+1 === 0x00000001
+1's complement === 0xfffffffe
+Add 1 === 0xffffffff
+ 
+* What is reentrant code
+non self modifying code. This is also known as thread safe code.
+Pure code/text i.e. function should not use any global data which
+also include static data. If can't avoid use of global data then
+protect it with lock/semaphore or raise the processor priority to
+maintain the data consistency.
+ 
+Also, function should not returns static variables (covered by
+not using static var in first paragraph). Example of non-reentrant
+functions are strtok as it holds the string to be broken into
+tokens. Another example is ctime it returns pointer to a static
+data that is overwritten by each call.
+ 
+Function returning static var should be modifed by following two
+ways 1) Dynamically allocate space and return that
+2) Caller of function passes the space where value can be returned.
+ 
+There are thread safe version of C lib available with _r suffix
+such as strtok_r etc.
+ 
+A crude way to find if a given lib is thread safe or not is as follows
+1. write a test program invoking functions in library
+2. stub out the library functions
+3. compile and check the data/bss size using size on a.out
+4. remove the stubs and compile the test program with lib
+5. again check the size of data and bss sections, if they increased that means
+that lib is using global data and hence lib is not thread safe.
+I am not sure if this way one can catch use of static var too.
+ 
+ 
+ 
+* CISC(complex instruction set computer) Vs RISC(reduced inst set computer)
+time/program = instructions/program * cycle/instruction * time/cycle
+CISC - Vertical(complex) instruction decoding, time consuming
+generated code size is less in comparison to RISC but
+since each inst take more time the overall time is more.
+These complex instructions are further divided into microcodes
+and HW having control units to decode these microcodes.
+Thus complexcity is shifted from SW to HW. Most of CISC
+instructions need more than one cycle to execute.
+ 
+(history: during late 70s, core memory use to be very expencive
+and secondary memory was very slow, so idea behind CISC to
+reduced the generated code so it take less space
+when loaded in core memory, hence they designed complex
+instructions and addressing schemes, so that one can map
+HLL to Assembly one to one. )
+ 
+So to keep time/program minimum, CISC focused on first
+factor(inst/program).
+ 
+RISC - Horizantal instruction decoding, simple store/load inst
+used many registers, Assembly code size is much more
+in comparison to CISC but they are consist of simple
+instruction hence overall execution time is less.
+RISC compilers are more complex than that of CISC.
+RISC don't use microcodes and most of the instructions
+need just one cpu cycle to complete. This helps to build
+pipelines.
+ 
+So to keep time/program minimum, RISC focused on second
+factor(cycle/instruction). Thuogh number of instructions
+generated are little bit more compair to CISC code but
+since each inst. take only one cpu cycle hence overall
+better time/program.
+ 
+* Dos and don't while writing ISR
+1. Don't use any blocking(malloc, semaphore/lock which may endup
+calling sleep )function inside ISR. This has three side effects
+a. This will unnecessarly penalise current process by putting
+it to sleep state.
+ 
+b. Before going to sleep, ISR might has acquired some critical
+resources so those critical resources are held up.
+ 
+c. Last but not least this block all interrupts coming at same
+and lesser interrupt priority level and causing higher interrupt
+lattency.
+ 
+2. If ISR acquiring any lock/semaphore/resource, which can also be
+acquired by any higher level ISR then block that higher priority
+interrupt b/f acquiring the resource.
+ 
+3. Try to make it short to avoid high interrupt latency in low
+priority interrupts.
+ 
+* Define what is recursive procedures are and why u should not use
+recursion in OS code.
+ 
+A procedure which call itself e.g. factorial number, tree traversal
+Inorder(Left-Root-Right),Preorder(Right-Root-Left)and Postorder(Left-Right-Root)
+GNU(GNU is Not Unix)
+ 
+In general, recursion is used to divide the given problem in
+smaller sub-problem until the problem is small enough to be
+solved and then based on this try to solve bigger problem.
+This is top-down programing approach (see dynamic programing
+which is bottom-up). One disadvantage of top-down approach is
+some time same sub problem is solved multiple times classic
+example is Fibonacci numbers.
+ 
+Recursion permits lucid and concise description of algorithms(easier
+to understand), w/t recursion one have to use stack. However recursion
+usages run time stack!
+ 
+In OS one should avoid recusion because recursion need lot of run
+time stack space so if problem is very large, it can overflow the
+stack area and lead data corruption.
+ 
+More facts about recursion:
+ 
+Direct recursion Vs. indirect
+-----------------------------
+If function call itself then it is direct recursion.
+If say function A call function B and B call function A, this is indirect recursion.
+ 
+Tail Recursion
+---------------
+A function is said to be tail recursive, if there is no pending operation
+to be performed after return from recursion.
+Tail recursive function typically returns the value of last recursive
+call as the value of the function.
+ 
+The tail recursion is very desirable because they saved lot of stack space
+during run time (stack space is independent of number of recursive calls).
+ 
+The infamous factorial is usually written in a non-tail recursive manner
+ 
+int fact (int)
+{
+    if (n == 0)
+        return 1;
+   
+    return ( n * fact(n-1) );
+}
+ 
+Here pending operation multiplication to be performed after
+return from recursion. whenever there is a pending operation, the
+function is non-tail recursive and information
+about each pending operation has to be stored so the amount of
+information is not independent of the number of calls.
+ 
+The factorial can be written in a tail-recursive way:
+ 
+int fact (n)
+{
+     return (fact_aux(n, 1));
+}
+ 
+int fact_aux(number, accumulator)
+{
+    if (number == 0)
+  	   return(accumulator);
+ 
+    return (fact_aux(number-1, number * accumulator));
+}
+ 
+Linear Vs non-linear (tree) recursion
+-------------------------------------
+The way recursion grows.
+If pending operations involve no other recursive call then it is linear recursion.
+A function is called non-linear recursive if pending operation involve another
+recursive call.
+The Fibonacci function is classic example of tree recursion.
+ 
+fib(n) = 0 if n is 0
+= 1 if n is 1
+= fib(n-1) + fib(n-2)
+ 
+* Fibonacci numbers
+ 
+0, 1, 1, 2, 3, 5, 8, 13
+ 
+For general definition, see above
+Problem with recursive solution is that we need to recompute
+the same numbers for multiple times.
+ 
+So, either use tail recursion for use iterative solution.
+ 
+Iterative solution:
+unsigned int fibonacci(unsigned int n)
+{
+    if (n == 0)
+        return 0;
+    if ((n == 1) || (n == 2))
+        return 1;
+ 
+    for (i=3; i<n; i++) {
+        tmp = prev;
+        prev += prev_prev;
+        prev_prev = tmp;
+    }
+ 
+    return(prev);
+ 
+}
+ 
+Using Tail recursion:
+/* Find out the nth number in fibonacci series
+ * which is 0, 1, 1, 2, 3, 5, 8, 13, 21, …
+ */
+ 
+int fab(int n)
+{
+    if (n == 1)
+        return 0;
+    if (n == 2)
+   return 1;
+ 
+    
+    return(fab_aux(n, 1, 0));
+}
+ 
+int fab_aux(int n, prev, prev_prev)
+{
+    if (n == 2)
+        return prev;
+ 
+    return(fab_aux(n-1, prev+prev_prev, prev));
+}
+ 
+* Recursive Vs. Dynamic Programming
+Dynamic progamming is bottom-up approach i.e. first solve the trivial cases
+store the result. add the complexcity to trivial problem and try to solve
+it based on previous result and the store the result to next step.
+Thus it require lots of memory space to store the intermediate results.
+ 
+However, unlike recursion, it save time by avoid solving the same
+sub-problem by using intermediate results.
+ 
+One variation of bottom-up approach is letting recursive solution to
+store the intermediate results and thus avoid solving the same sub-problem
+repeatedly! This approach is called Memorization.
+ 
+* What is portable code?
+1. Using wrappers around system calls e.g. using vertual system call
+then within virtual system call try to keep platform dependencies
+at single place/file.
+Example: say one system support bcopy and another support only memcpy
+so it better to write wrapper function such as say projectname_cpy
+and call either bcopy or memcpy inside this wrapper.
+ 
+2. Don't make any assumption on size of char, int, long, short etc. Use S8,
+S16, S32 and typedef (e.g. typedef int S32). Keep this environment
+dependent info in single file and include this file.
+ 
+Also data types may be aligned to different word boundaries
+so compiler can introduce fillers.
+ 
+3.Don't hard code ASCII char in C code as well as shell scripts
+'\012' instead of '\n'
+ 
+Don't use char as indices into array
+hash_table['a'] may not equal to hash_table[0x41] is
+character set is EBCDIC.
+ 
+Don't use high order bit of char for some special purpose.
+one can do this in ASCII as only 7bits are necessary for
+all printable characters but this is not true in EBCDIC.
+ 
+Don't assume that character set('a'..'z') is contiguous.
+This is true for ASCII but not in EBCDIC. Even seemingly
+harmless code need to be change
+char c; for (c='a'; c<'z'; c++) {..}
+ 
+When writing code on EBCDIC m/c which talk to
+arbitrary remote system via socket (such as FTP client)
+then always convert text to ASCII b/f sending
+and convert incoming text to EBCDIC.
+ 
+4. Check code generated by lex and yacc as they
+contains ASCII dependencies and won't work in
+EBCDIC system.
+ 
+5. Don't make any assumption on endianness of m/c.
+6. stay away from non portable packages eg cursore
+7. try to avoid use of shared memory and signals.
+ 
+If u endup porting s/w, try to list all system calls used
+(run nm to list all fn calls) and see if destination platform is
+POSIX or XPG compliant (yu job is very easy). If not list all
+system call and their params and match in the destination platform.
+ 
+* Some good programming tricks
+create environment option file, having following sections
+o common flags such as debug/trace level
+o product specific such as protocol variant ITU, ANS, NTT, product
+features and coupling etc.
+ 
+create environment dependent file, having following sections
+1.
+#ifdef __STDC__
+ 
+typedef void *Ptr; /* ANSI vanilla pointer type definition */
+#define ARGS(m) m
+ 
+#else
+ 
+typedef char *Ptr; /* K&R vanilla pointer type definition */
+#define ARGS(m) ()
+ 
+#endif
+ 
+2. platform dependent typedefs
+#ifdef PLATFORM_A
+ 
+typedef unsigned char Bool; /* boolean */
+typedef char S8; /* signed - 8 bits */
+typedef unsigned char U8; /* unsigned - 8 bits */
+ 
+typedef short S16; /* signed - 16 bits */
+typedef unsigned short U16; /* unsigned - 16 bits */
+ 
+#if !defined(BIT_64)
+typedef long S32; /* signed - 32 bits */
+typedef unsigned long U32; /* unsigned - 32 bits */
+#else /* BIT_64 */
+typedef int S32; /* signed - 32 bits */
+typedef unsigned int U32; /* unsigned - 32 bits */
+typedef long S64; /* signed - 64 bits */
+typedef unsigned long U64; /* unsigned - 64 bits */
+#endif /* BIT_64 */
+ 
+#define NULLP 0L /* null pointer */
+#define NULLD 0L /* null data */
+#define PTR U32 /* pointer */
+#define PTRSIZE sizeof(U32) /* pointer size */
+ 
+#define REG1 register /* register 1 - highest priority */
+#define REG3 register /* register 3 */
+ 
+ 
+#else
+#ifdef PLATFORM_B
+#else
+/* default */
+#endif /* PLATFORM_B */
+#endif /* PLATFORM_A */
+ 
+3. /* scope control keywords */
+ 
+#ifdef PUBLIC
+#undef PUBLIC
+#define PUBLIC /* public is c default scope */
+#else /* not PUBLIC */
+#define PUBLIC
+#endif /* PUBLIC */
+ 
+#ifdef PRIVATE
+#undef PRIVATE
+#define PRIVATE static /* private is c static scope */
+#else /* not PRIVATE */
+#define PRIVATE static /* private is c static scope */
+#endif /* PRIVATE */
+ 
+#ifdef EXTERN
+#undef EXTERN
+#define EXTERN extern
+#else /* not EXTERN */
+#define EXTERN extern
+#endif /* EXTERN */
+ 
+#ifdef __STDC__
+#define CONSTANT const
+#define VOLATILE volatile
+#else
+#define CONSTANT
+#define VOLATILE
+#endif /* __STDC__ */
+ 
+ 
+Its good idea to start evry header file with
+#ifndef __HEADERFILE_NAME__
+#define __HEADERFILE_NAME__
+ 
+#ifdef __cplusplus
+extern "C" {
+#endif
+Body of header file
+ 
+#ifdef __cplusplus
+}
+#endif
+ 
+#endif
+ 
+* How is 64bit application more useful than 32bit
+* What is Real time OS
+* Name Real time OS pSoS, VxWorks, MTOS
+* what is priority inversion ( Let high priority job wait and allow
+low priority job to finish and free the resource for high priority job)
+ 
+* What are advantages of using Network Processors
+1. Unlike ASIC, NPU are programable so easily cope with changing technologies.
+2. Unlike General Perpose CPUs, they are optimized for packet processing
+such as pattern matching, Hash lookup and Content Addressable Memory
+3. No MMU overhead, this helps to keep up to line speed.
+4. H/W supported multithreading. Zero or few cycle required for context switch
+ 
+* Mapping line rate to packet processing speed
+Line Rate(bits/sec) -> packet/sec (say a)
+CPU speed (cycle/sec) (say b)
+so b/a is cycle/packet
+ 
+ex: data rate is oc-48 i.e. 2.5 Gbps so system should be able to keep up
+with min size packets at this rate
+Min size packet = 46Bytes
+packet arrival rate 2.5/(46*8) = 6.8 Million Packets/sec
+CPU speed is 600 MHz = 600 Million cycle/sec
+so 600/6.8 = 88 cycle/packet
+ 
+* B-tree - check notes at http://web.umr.edu/~ercal/253/253.html
+for constructing b-tree from traversal sequence
+ 
+To exactley construct the binary search tree, we should
+traverse it in preorder or level order and then add the
+nodes as per the traversal sequence.
+Remember, we built the tree from top down i.e. nodes are always added
+as leaves. Therefore, in order to reconstuct the exactly same binary search tree
+following property must hold - before a key is inserted into the tree, the key which
+was the key of its parent node in the original tree must already be in the tree.
+Preorder or level-order traversal will do what we need, since each always visits
+parents before their children, and so parents will always appear before their children
+ 
+* B-tree
+keys in a binary search tree are stored such that
+all nodes in the right subtree must be greater than or equal to root
+and all nodes in the left subtree must be less than or equal to root.
+operation on binary search tree are
+Tree walk - Inorder, Preorder, PostOrder and Level order (Bredth-first)
+Inorder - left, root, right (need operator precedence to parse the traversal seq.)
+Preorder - root, left, right (polish notation, non-ambiguous, can use to copy search tree)
+To copy the binary search tree, traverse the original tree in preorder and
+add the node in new tree.
+ 
+Postorder - left, right, root (easy to parse postfix traversal sequence)
+ 
+inorder_tree_walk(tree *root)
+if (root != NULL) {
+inorder_tree_walk(root->left)
+printf("key is %d\n", root->key);
+inorder_tree_walk(root->right);
+}
+ 
+Level Order
+Let t be the tree root.
+while (t != null)
+{
+visit t and put its children on a FIFO queue;
+remove a node from the FIFO queue and
+call it t;
+// remove returns null when queue is empty
+}
+a
+b c
+d e f
+g h i j
+ 
+a b c d e f g h i j
+ 
+Search
+Recursive version
+ 
+tree_search(tree *root, key_t key)
+if ((root == NULL) || (root->key == key)) {
+return root;
+}
+if (key > root->key)
+return(tree_search(root->right, key);
+else
+return(tree_search(root->left, key);
+ 
+Iterative version
+ 
+/*
+ * To search the first instance of key, pass the pointer to root node
+ * and set the search to FIRST.
+ * To find the next instance of it, pass the last node returned by tree_search
+ * and set the search to NEXT.
+ * The assumption is that node with the same key values are stored in the right
+ * hand subtree.
+ */
+typedef enu {
+    FIRST,
+    NEXT,
+} search_t;
+ 
+ 
+node_t *tree_search(node_t *root, key_t key, search_t search) {
+    if (search == NEXT)
+        //This is NEXT type search, so look in right hand sub tree.
+        root = root->right;
+ 
+     while (root) {
+         if (root->key == key)
+             return(root);
+         if (key > root->key)
+             root = root->right;
+         else
+             root = root->left;
+     }
+     return NULL;
+}
+ 
+Find Minimum - goto leftmost node in the search tree
+minimum(tree *root) {
+while (root->left != NULL)
+root = root->left;
+return root;
+}
+ 
+ 
+Find Maximum - goto rightmost node in the search tree
+maximum(tree *root) {
+while (root->right != NULL)
+root = root->right;
+return root;
+}
+ 
+Find Depth of binary tree
+FindMaxDepth(tree *root, int depth, int *maxdepth)
+if (root) {
+depth++;
+if (*maxdepth <depth)
+*maxdepth = depth;
+FindMaxDepth(root->left, depth, maxdepth);
+FindMaxDepth(root->right, depth, maxdepth);
+}
+ 
+ 
+ 
+find_depth(tree *root)
+{
+    if (!root) return -1;
+ 
+    h1 = find_depth(root->right);
+    h2 = find_depth(root->left);
+ 
+    return (h1>h2) ? h1+1 : h2+1 ;
+}
+ 
+find_depth(tree *root, int depth)
+{
+    if (root == NULL) return(depth-1);
+ 
+    depth++;
+ 
+    h1 = find_depth(root->right, depth);
+    h2 = find_depth(root->left, depth);
+ 
+    return(max(h1, h2));
+}
+ 
+Find successor - in binary search tree successor of node x is the smallest
+key greater than key[x]
+successor_tree(node)
+if (node->right != NULL)
+return minimum(node->right);
+ 
+parent = node->parent;
+while ((parent) && (parent->righ == node)) {
+node = parent;
+parent = node->parent;
+}
+return parent;
+}
+Search a val in Binary tree (its not search tree!)
+search(tree *root, key_t key)
+if (root == NULL)
+return NULL;
+if (root->key == key)
+return root;
+tmp = search(root->left, key);
+if (tmp) // found the key!
+return tmp;
+//search in the right sub-tree
+return search(root->right, key);
+ 
+Find max val in Binary tree (its not search tree!)
+int maxval(tree *root)
+int max;
+max = root->key;
+if (root->left) {
+int new_max;
+new_max = maxval(root->left);
+if (max < new_max)
+max = new_max;
+}
+if (root->right) {
+int new_max;
+new_max = maxval(root->right);
+if (max < new_max)
+max = new_max;
+}
+return max;
+ 
+ 
+* Find lowest common ancestor in binary search tree
+From wikipedia the definition of lca is
+In graph theory and computer science, the lowest common ancestor (LCA) of two nodes v and w in a tree or directed acyclic graph (DAG) is the lowest (i.e. deepest) node that has both v and w as descendants, where we define each node to be a descendant of itself (so if v has a direct connection from w, w is the lowest common ancestor). In a tree, the lowest common ancestor is unique; in DAGs, this is not necessarily the case.
+ 
+tree *find_lca_in_bst(tree *root, int a, int b)
+{
+    if (!root)
+        return (NULL);
+ 
+    if (a<root->val && root->val >b) ||
+       (a>root->val && root->val>b)
+           return(root);
+ 
+/* Since each node is descendant of itself */   
+ if (root->val == a) ||
+       (root->val == b)
+            return (root);
+ 
+if (root->val > a && root->val > b)
+    return (find_lca_in_bst(root->left, a, b));
+ 
+return(find_lca_in_bst(root->right, a, b));
+ 
+} /*find_lca_in_bst */
+ 
+* Find lca in binary tree
+// This function returns pointer to LCA of two given values n1 and n2.
+// This function assumes that n1 and n2 are present in Binary Tree
+struct Node *findLCA(struct Node* root, int n1, int n2)
+{
+    // Base case
+    if (root == NULL) return NULL;
+ 
+    // If either n1 or n2 matches with root's key, report
+    // the presence by returning root (Note that if a key is
+    // ancestor of other, then the ancestor key becomes LCA
+    if (root->key == n1 || root->key == n2)
+        return root;
+ 
+    // Look for keys in left and right subtrees
+    Node *left_lca  = findLCA(root->left, n1, n2);
+    Node *right_lca = findLCA(root->right, n1, n2);
+ 
+    // If both of the above calls return Non-NULL, then one key
+    // is present in once subtree and other is present in other,
+    // So the current node is the LCA
+    if (left_lca && right_lca)  return root;
+ 
+    // Otherwise check if left subtree or right subtree is LCA
+    return (left_lca != NULL)? left_lca: right_lca;
+}
+ 
+ 
+* How to manage free buffer in a pool
+Use rings to manage the buffers in a free pool as follows
+ 
+head tail
+| |
+--------------------------------------
+| 1 | 2 | 3 | 4 | ...... | MAX | NULL|
+--------------------------------------
+At initialization time a ring is filled in with
+the indexes of available buffers from 1 to MAX_NUMBER
+(0 - is reserved as an invalid number).
+Head pointer is set to the beginning of the ring.
+Tail pointer is set to the end of the ring.
+On get buffer request the index under the head poiter is extracted and given
+as an index of buffer in the associated free pool. The location under the head
+is filled with NULL and the head is moved to the next position (circular).
+ 
+When a buffer is to be freed, the index of the buffer is written at the location
+the tail pointing at, tail is moved to the next location (circular)
+ 
+In order to use this set of function the user has to do the following:
+- allocate an appropriate buffer pool to be managed -
+- allocate a free_list_info structure.
+The structure will be owned by the user;
+- initialize a free list ring by calling function init_free_list_ring();
+ 
+From that point on when the user needs a buffer from the pool, he has to
+call get_index_from_free_list() function providing handle
+associated with the pool as a parameter.
+ 
+The function will return an index of the available buffer in the associated pool.
+When the buffer needs to be released, function put_index_to_free_list()
+is to be called to return buffer back to the pool.
+ 
+It is caller responsibility to initialize/clean up the buffer context.
+ 
+ 
+typedef struct
+{
+uint16 *ring;
+uint16 length;
+uint16 *head;
+uint16 *tail;
+} handle;
+ 
+init_free_list( handle * info, ix_uint16 length);
+remove_free_list( handle * info);
+get_index_from_free_list(handle * info, ix_uint16 *index);
+put_index_to_free_list(handle * info, ix_uint16 index);
+ 
+* Semaphores and mutex
+mutex is a binary semaphore. only two values 0/1
+p operation will consume or Down operation will sleep
+v operation will produce or Up operation will wakeup
+ 
+Producer and consumer problem
+ 
+free_buffers = 5
+used_buffers = 0
+ 
+0 1 2 3 4
++---+---+---+---+---+
+| | | | | |
++---+---+---+---+---+
+|
+|
+head, tail
+ 
+producer code consumer code
+p(free_buffers); p(used_buffers);
+lock lock
+buf[tail] = val; val = buf[head];
+tail = (tail+1)%5 head = (head +1)%5;
+unlock unlock
+v(used_buffer); v(free_buffer);
+ 
+Reader/Writer Problem:
+ 
+Following solution gives preference to reader i.e. as long as there
+are any reader, writer won't get a chance!
+ 
+semaphore mutex = 1; // Controls access to the reader count
+semaphore db = 1; // Controls access to the database
+int reader_count; // The number of reading processes accessing the data
+ 
+Reader()
+{
+while (TRUE) { // loop forever
+down(&mutex); // gain access to reader_count
+reader_count = reader_count + 1; // increment the reader_count
+if (reader_count == 1)
+down(&db); // if this is the first process to read the database,
+// a down on db is executed to prevent access to the
+// database by a writing process
+up(&mutex); // allow other processes to access reader_count
+read_db(); // read the database
+down(&mutex); // gain access to reader_count
+reader_count = reader_count - 1; // decrement reader_count
+if (reader_count == 0)
+up(&db); // if there are no more processes reading from the
+// database, allow writing process to access the data
+up(&mutex); // allow other processes to access reader_countuse_data();
+// use the data read from the database (non-critical)
+}
+ 
+Writer()
+{
+while (TRUE) { // loop forever
+create_data(); // create data to enter into database (non-critical)
+down(&db); // gain access to the database
+write_db(); // write information to the database
+up(&db); // release exclusive access to the database
+}
+ 
+So how to fix writer starvation?
+ 
+Reader()
+{
+down(read_lock)
+up(read_lock)
+ 
+down(mutext)
+ 
+read_count ++
+if (read_count == 1)
+down(db)
+ 
+up(mutext)
+ 
+read the data base
+ 
+down(mutext)
+read_count--
+if (read_count == 0)
+up(db)
+up(mutext)
+}
+ 
+Writer()
+{
+down(read_lock)
+down(db)
+ 
+write data base
+ 
+up(db)
+up(read_lock)
+}
+Since reader as well writer have the same priority of read_lock so this
+technique does not really prefer one over the other.
+ 
+Following algorith gives preference to writer i.e. as long there
+are any writer waiting no further readers are allowed.
+ 
+Reader:
+======
+ 
+down(mutext)
+if (active_writer OR waiting_writer)
+waiting_reader ++
+else
+//gives go ahead to self
+active_reader++
+up(OK-TO-READ)
+up(mutext)
+ 
+down(OK-TO_READ)
+ 
+read...
+ 
+down(mutext)
+active_reader --
+if (active_reader == 0) AND (waiting_writer)
+up(OK-TO-WRITE)
+waiting_writer--
+active_writer++
+up(mutext)
+ 
+ 
+Writer:
+======
+ 
+down(mutext)
+if (activer_reader OR active_writer)
+waiting_writer++
+else
+active_writer++
+up(OK-TO-WRITE)
+up(mutext)
+ 
+down(OK-TO-WRITE)
+ 
+write...
+ 
+down(mutext)
+ 
+active_writer--
+if (waiting_writer)
+waiting_writer--
+active_writer++
+up(OK-TO-WRITE)
+else
+if (waiting_reader)
+waiting_reader--
+active_reader++
+ 
+up(mutext)
+===============================================================================
+Some maths
+*Arithmatic series
+An = A + (n-1)d
+A is first element
+An is nth element
+d is difference
+ 
+sum = n/2[2A + (n-1)d] = n/2[A + nth term]
+ 
+An arithmetic series has first term 2000 and common difference -2.3.
+Calculate the value of the first negative term of the series,
+and the sum of all the positive terms.
+ 
+Solution:
+ 
+ 
+Tn = a + (n - 1)d < 0
+2000 + (n - 1)(-2.3) < 0
+2002.3/2.3 < n
+n > 870.56
+So first negative trem should be 871th term
+and its value will be 2000 + (871-1)*(-2.3) = -1
+ 
+Number of +ive terms are 870
+and their summ will be (870/2)[4000 + 869(-2.3)]
+ 
+ 
+ 
+*Geometric series
+An = A * (r)^(n-1)
+where r is ratio between two successive element
+ 
+e.g. 1, 1/2, 1/4, 1/8
+so nth element will be 1*(1/2)^(n-1)
+The sum of this series is converges towards 2
+(1 + .5 + .25 + .125 +....)
+ 
+sum = A(1-r^n)/(1-r)
+ 
+if abs(r) < 1 then r^n ->0 as n->infinity
+so sum = A/(1-r)
+ 
+* Binomial series
+(a+b)^n = C(n,0)a^n + C(n,1)(a^n-1)(b) + C(n,2)(a^n-2)(b^2) +..+C(n,n)b^n
+ 
+(x^n) - (y^n) = (x-y)(x^(n-1) + (x^(n-2))*y + ... + x*(y^(n-2)) + y^(n-1))
+ 
+x^n -1 = (x-1) (x^(n-1) + x^(n-2) +....x^2 +x +1)
+ 
+* How to find of remainder of (8^99)/7
+((7+1)^99)/7 => { 7^99 + C(99,1) 7^98 + C(99,2) 7^97 +..C(99, 98) 7 + C(99, 99) 1 }/7
+Since all terms are divisible by 7 except the last so the remainder will be 1.
+ 
+* How to find remainder of (5^99)/8
+5^99 => (4+1)^99
+=>4^99 + C(99, 1) 4^98 +.....C(99, 97) 4^3 + C(99, 98) 4 + 1
+Since any term in this series having 4^2 or higher is divisible by 8
+so remainder is govern by C(99,98) 4 +1 =397 so remainder will be 5
+ 
+* Taylor's series
+Any function can be expressed in sum of its derivatives
+ 
+f(x) = (Value of f(x) at x = c) +
+(Value of first derivative of f(x) at x=c) * (x-c) /(FACTORIAL(1)) +
+(Value of second derivative of f(x) at x=c) * (x-c)^2 /(FACTORIAL(2)) +
+(Value of third derivative of f(x) at x=c) * (x-c)^3 /(FACTORIAL(3)) +
+(Value of fourth derivative of f(x) at x=c) * (x-c)^4 /(FACTORIAL(4)) +
+(Value of fifth derivative of f(x) at x=c) * (x-c)^5 /(FACTORIAL(5)) +
+ 
+Where c is called center.
+This series is used in finding approximate values such as squart(3.95)
+ 
+Solution:
+The function is squart(x), and we need to find its value at x = 3.95.
+If we find the value of this function at c =4, it will be aproximately same as that
+of c = 3.95.
+ 
+First derivative of squart(x) = (1/2) * (1/(x)^(1/2))
+Second derivative of squart(x) = (-1/4) * (1/(x)^(3/2))
+Third derivative of squart(x) = (3/8) * (1/(x)^(5/2))
+Fourth derivative of squart(x) = (-15/16) * (1/(x)^(7/2))
+ 
+ 
+now calculate the value of these derivatives at c(4)
+Val of f(x) at 4 = 2
+Val of 1st derivative at 4 = 1/4
+Val of 2nd derivative at 4 = -1/32
+Val of 3rd derivative at 4 = 3/256
+...
+ 
+Putting these values back
+2 +
+1/4 * (3.95-4) +
+-1/32 *(3.95-4)^2 / 2 +
+3/256 *(3.95-4)^3 / 6 +
+...
+= 1.98746
+ 
+Value from calculator is also 1.98746
+ 
+Similarly squart(2) can be found. In this case, it is easy to take c = 1
+using first three derivative it is 1.3984 which is close enough to 1.414(1% error).
+ 
+* Greatest Common Divisor
+GCF(8, 16, 20)
+8 = 2 * 2 * 2
+16 = 2 * 2 * 2 * 2
+20 = 2 * 2 * 5
+------------------------
+2 * 2
+ 
+SO GCF is 4
+ 
+* Least Common Multiple
+LCM(8, 16, 20)
+8 = 2 * 2 * 2
+16 = 2 * 2 * 2 * 2
+20 = 2 * 2 * 5
+------------------------
+2 * 2 * 2 * 2 * 5
+So LCM is 80
+where C(n,k) = factorial(n)/(factorial(n-k) * factorial(k))
+ 
+* Prime number, is a positive number, greater than 1 who is only divisible by 1 and self.
+ 
+bool IsPrime(int num)
+{
+reg int i;
+ 
+if ((num <= 0) || (num == 1))
+return 0;
+for (i=2; i <num; i++) {
+if (num %i == 0) //number is divisible by i
+return 0;
+}
+return 1;
+}
+ 
+Perfect number is a positive number whoes sum of all divisor excluding itself
+are equal to number itself.
+E.g. 6, its factors are 1, 2, 3 and 1+2+3 = 6
+ 
+If (2^n) -1, is a prime number then ( (2^n) -1 ) (2)^(n-1) will be perfect number.
+E.g. for n =2, 2^2 -1 i.e. 3 is a prime so 3 * 2^(2-1) is a perfect number.
+for n =3, 2^3 -1 i.e 7 is a prime so 7 * 2^(3-1) = 28 is a perfect number.
+other perfect nums are 496, 8128
+ 
+In order for 2^n -1 to be prime, n must be prime
+for example when
+n (2^n) -1 Prime number is {(2)^n -1}*{(2)^(n-1)} perfect number
+2 3 yes 6 yes
+3 7 yes 28 yes
+5 31 yes 496 yes
+7 127 yes 8128 yes
+11 2047 NO (23x89) NO
+ 
+* Geometry Formulas
+Area of Triangle = base * hight/2
+Area of circle = Pi * radius * radius
+Circumfrance = 2 * Pi * r
+Surface area of sphere = 4 Pi * r^2
+Volume of sphere = (4/3) Pi * r^3
+Surface are of cylinder = 2Pi r + 2Pi r^2
+Volume of Cylinder = Pi r * r * h
+ 
+* Big Oh Notation
+O(1) Constant number is even/odd
+O(log n) Logrithmic Binary search
+O(n) Linear Search in un-sorted list
+O(nlogn) Linerithmic Merg sort
+O(n^c) Polynomial
+O(c^n) Exponential
+O(!n) Factorial Brute force search
+ 
+O(n^1/3) < O(n^1/2) < O(n) < O(n log n) < O(n^2) < O(n^3)
+< O(n^8) < O(2^n) < O(4^n) < O(!n)
+So how to decide O(f) = O(g), O(f) < O(g) or O(f) > O(g)
+In most of the cases if Lim n->infinity f(n) = infinity
+and Lim n->infinity g(n) = infinity
+and Lim n->infinity f(n)/g(n) = L, then if
+0<L<infinity then O(f) = O(g)
+L = 0 then O(f) < O(g)
+L = infinity then O(f) > O(g)
+ 
+Ex: O(n) = O(10n+5)
+since n and (10n+5) both ->infinity as n->inf
+and as n->inf, (n)/(10n +5) = 1/10
+ 
+* some terminology
+False Positive (or false alarm) result is positive even though tested
+subject is not infected.
+False Negative (or miss) result is negative even though tested subject
+is infected.
+True Positive result is +ive and subject is infected.
+True Negative result is -ive and subject is not infected.
+ 
+Software problem due to counter roll over
+=========================================
+ 
+Typically system has tickGet function, returning ticks laps
+since system is last booted as unsigned int.
+ 
+Say there are 64 ticks in one second so if result of tickGet
+stored in unsigned int, then that counter will roll over roughly
+after 111 weeks. So if code has not taken care of this roll over, then some
+serious problem raised.
+ 
+Example:
+Following snippet cause problem due to this roll over
+ 
+UINT32 take_break_after_ticks;
+ 
+take_break_after_ticks = tickGet() + ONE_SECOND;
+ 
+ 
+while(1) {
+...
+if (tickGet() > take_break_after_ticks) {
+sleep(some_ticks);
+take_break_after_ticks = tickGet() + ONE_SECOND;
+}
+....
+}
+ 
+The problem starts when tickGet close to rollover.
+Say when take_break_after_ticks initialize, it is very close to 0xffffffff
+and then tickGet roll over so tickGet will returns a smaller value for very
+long time and system will not call sleep and the current task will hog the
+CPU.
+ 
+The above problem can be avoided if code is written as follows:
+ 
+UINT32 last_tick_stamp, current_tick_stamp;
+ 
+last_tick_stamp = tickGet();
+take_break_after_ticks = last_tick_stamp + ONE_SECOND;
+ 
+while(1)
+{
+...
+current_tick_stamp = tickGet();
+if (current_tick_stamp < last_tick_stamp) {
+/* tickGet roll over */
+last_tick_stamp = tickGet();
+take_BREak_after_ticks = last_tick_stamp + ONE_SECOND;
+} else if (current_tick_stamp > take_break_after_ticks) {
+sleep();
+last_tick_stamp = tickGet();
+take_break_after_ticks = last_tick_stamp + ONE_SECOND;
+}
+...
+}
+ 
+ 
+* Various type of C
+- K& R c: The original c (also called as traditional c).
+- c89 :c based on 1989 ANSI C specification (X3.159-1989)
+- c90: ANSI specification got rectified in 1990 and becomes ISO standard (ISO/IEC 9899:1990)
+- c99 :c based on ANSI C group update on 1999
+- GNU c: similar to c89 + lot of new features of c99 + other extension
+one can choose a dialect in gcc by -std= switch
+possible values are c89, c99, gnu89, iso9899:1990 (for ISO 1990) and gnu99.
+gnu89 is current default. gnu99 will become the default when c99 support is complete.
+One should use -pedantic (or -pedantic-errors if you want them to be errors
+rather than warnings) to list all ISO con-confirmnance.
+ 
+one can also use -ansi for ISO C89 (C90?)
+ 
+* How to mix c and c++ code
+Say c++ code like to use c fn available in user lib form
+(I guess standard c lib already taken care of this!).
+E.g.
+// c header file greet.h
+char *greet();
+ 
+//c source file greet.c
+#include "greet.h"
+char *greet() { return ( (char *) "Hello" ); }
+ 
+say compile above c file using c compiler and generates libgrret.a
+ 
+//c++ source file mixedcode.cpp
+#include greet.h"
+main() { char *greeting = greet(); cout << greeting <<"\n";}
+ 
+compile mixcode.cpp using c++ compiler and link libgreet.a
+to resolve greet(). But linking phase will give error
+as it will not find greet().
+The reason is c++ compiler name mangling functionality.
+Due to name mangle function, greet() will be internally
+referenced as something else (depends on compile algorithm)
+so linker could not found that mangled name in libgreet.a
+ 
+The solution is disabling the name mangling in c++ compiler
+for greet(). This can be done by as follows:
+//file greet.h
+#ifdef __cplusplus
+extern "C" {
+#endif
+ 
+char *greet();
+ 
+#ifdef __cplusplus
+}
+#endif
+ 
+The extern "C" linkage will tell c++ compiler that do not generates
+mangle name for greet() as it is c function. Please note that c compiler
+does not support extern "C" linkage and hence we put above under __cplusplus
+flag to avoid compilation error in c compiler.
+ 
+Please also note if one is mixing c and c++ code then use compilers that are
+compatable such as they define data type int, float or pointer in the same way.
+ 
+One disadvantage of disabling the name mangling functionality is that
+perticular function can not be overloaded.
+ 
+* include guard
+To avoid including same header file multiple number of times (and cause
+compiler error), each header file conditionally set a unique pre-processor
+macro. E.g.,
+ 
+File grandfather.h
+#ifndef GRANDFATHER_H
+#define GRANDFATHER_H
+ 
+struct foo {
+int foo_bar;
+};
+ 
+#endif
+ 
+File father.h
+#include grandfather.h
+ 
+File child.c
+#include grandfather.h
+#include father.h
+ 
+...
+ 
+One possible isuue with it that pre-processor macro may clash with
+any third-party name or any other global variable.
+ 
+To avoid this, compilers provide non-standard directive #pragma once.
+Programmers insert the "#pragma once" at the top of a header file to
+this scheme to work.
+Possible drawback is that compiler may not able to diffrenciate between
+symbolic links of same files1
+ 
+ 
+* Sorting Algorithms
+ 
+Type Best Time Average Worst-Time Mem-Space Stability Note
+Bubble sort O(n) O(n^2) O(1) y
+Binary tree O(nLogn) O(nLogn) O(nLogn) O(1) y
+Merge O(nLogn) O(nLogn) O(nLogn) O(n) y
+Quick O(nLogn) O(nLogn) O(n^2) O(Logn) n
+Heap O(nLogn) O(nLogn) O(nLogn) O(1) n
+ 
+A sorting algo is stable if it preserve the relative position of
+duplicate keys.
+ 
+** Merge Sort:
+Typical example of Divide and Conquer
+ 
+Algorith:
+// Assuming array A to be sorted between index left and right
+List mergesort(left, right)
+List list1, list2, result
+ 
+if (left eq right)
+put the array content in result and returns result;
+ 
+find mid <- (left+right)/2
+ 
+list1= mergesort(left, mid); // divide
+list2= mergesort(mid+1, right); // divide
+result = merge(list1, list2); // conquer
+ 
+Common implementation pitfalls:
+ 
+Most of the implementation take the middle by adding left with righ and
+dividing by 2. This is Ok for most of cases but when very large number
+of items have to sort, this scheme fails due to overflow.
+Possible solutions are use bigger data type to store middle or
+use left + (right-left)/2 to calculate middle.
+ 
+Advantages:
+1) Good for slow media such as tape.
+2) Stable
+ 
+Disadvantages:
+1) Due to recursion, many stack frames are required(LogN base 2).
+One can divide it in to more than 2 say 3 sublist to cut down the
+stack requirement. Also, in case of array an additional array of
+size n is required.
+ 
+2) Merge sort runs in O(n lg n) time, no matter what the input.
+This can be an advantage, but in some cases it can be a liability
+(if list is already sorted).
+ 
+3) An extra array of O(n) size is required to hold the result of
+a merger. So, mergesort is not in-place algorithm.
+ 
+Merge sort on single link list:
+Initially it looks merge sort is not good candidate to be performed
+on linked list as mid element is required at each step to divide the
+list in two equal lists. One can move the alternate node of link
+list in two lists solve the problem. Once that is done, sorting
+each list individually and then merging the result will achieve the
+goal. One advantage of using the linked list over array is that
+no additional space (array of size n) is required in link list case.
+ 
+Algorithm:
+ 
+Node_t *merge_sort(Node_t *original_list)
+ 
+Node_t *list1_head = NULL;
+Node_t *list1_tail = NULL;
+Node_t *list2_head = NULL;
+Node_t *list2_tail = NULL;
+ 
+if (original_list == NULL) OR (original_list->next == NULL) {
+/* original list is NULL or has only single node
+* In either case no further sorting is required!
+*/
+return original_list;
+}
+ 
+/* original list has more than one node.
+* divide the orig list in two equal lists
+* by alternatively adding node in two different lists.
+*/
+while (original_list) {
+/* Add the node pointed by original_list to
+* list1 at the tail/end.
+*/
+append(original_list, list1_head, list1_tail);
+ 
+/* move the original_list to next node */
+original_list = original_list->next;
+/* Add node pointing by original list to list2 */
+if (original_list) {
+append(original_list, list2_head, list_tail);
+}
+ 
+}
+/* Now orig list is divided in to list1 and list2
+* further merge_sort these list and combine the
+* result!
+*/
+list1_head = merge_sort(list1_head);
+list2_head = merge_sort(list2_head);
+ 
+return( merge(list1_head, list2_head) );
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+**** Merge sort on the link list (recursive procedure) Added on July 2014
+MS interview screen
+ 
+First of link list
+typedef struct node_t {
+struct node_t *next;
+int size
+char data[0]
+} s_node_t;
+ 
+typedef struct list_t {
+s_node_t *head;
+s_node_t *tail;
+} s_list_t;
+ 
+init_list(s_list_t *list)
+{
+    list->head = list->tail = (s_node_t *)list;
+}
+ 
+/* Add the node at tail end of list */
+append(s_list_t *list, s_node_t *node)
+{
+    node->next = list;
+    list->tail->next = node; /* this will init the head in case list is empty */
+    list->tail = node;
+}
+ 
+/* Remove the node from head */
+s_node_t *remove(s_list_t *list)
+{
+    s_node_t *node;
+ 
+    if (list->head == list)
+        return(NULL);
+ 
+    node = list->head;
+    list->head = node->next;
+    node->next = NULL;
+    
+    /* check if removing the last/tail node 
+     * if so need to adjust the tail pointer
+     */
+    if (node == list->tail)
+        list->tail = list;
+    return(node);
+}
+ 
+/* ok now focus on merge sort */
+merge_sort(s_list_t *original_list)
+{
+    s_list_t list1;
+    s_list_t list2;
+    
+    if (original_list->head == original_list->tail)
+        /* this will be true when list is empty of has just one element */
+        return;
+ 
+    init_list(&list1); init_list(&list2);
+ 
+    /* now partition the list */
+    while (!is_list_empty(original_list)) {
+        s_node_t *node;
+ 
+        node = remove(original_list);
+        append(list1, node);
+ 
+        node = remove(original_list);
+        if (node) {
+            append(list2, node);
+        }
+    } /* while */
+ 
+     /* now we have partitioned the list in two half */
+     merge_sort(list1);
+     merge_sort(list2);
+     merge_list(original_list, &list1, &list2);
+}
+ 
+/* merge the list1 and list2 in list
+ * the list is always empty
+ */  
+merge_list(s_list_t *list, s_list_t *list1, s_list_t *list2)
+{
+    s_node_t *node1, *node2;
+ 
+    node1 = remove(list1);
+    node2 = remove(list2);
+ 
+    while (node1 || node2) {
+        if (node1 && node2) {
+            if (node1->data < node2->data) {
+                append(list, node1);
+                node1 = remove(list1);
+            } else {
+                 append(list, node2);
+                 node2 = remove(list2);
+            }
+            continue;
+        } 
+ 
+        if (node1) {
+            append(list, node1); node1 = remove(list1); continue;
+        }
+        if (node2) {
+            append(list, node2); node2 = remove(list2); continue;
+        }
+ 
+    } /* while */
+}
+** Quick Sort
+Based on Divide and conquer algo
+ 
+Algorithm:
+1) Choose an item from the array to be the pivot.
+ 
+2) Partition the array such that all items less than the pivot
+are to the left and all items greater than are to the right.
+This will put the pivot to its proper position.
+ 
+3) Recursively sort each partition.
+ 
+Clearly, the performance of quicksort depend heavily on which array
+item is chosen as pivot. The best case is that pivot partition the array
+in two equally sized subarray at each stage. The worst case is that one
+partition is empty at each stage of partition (sorted array case).
+ 
+** Bucket sort
+Sorting w/t comparison and swapping!
+Time complexity O(n)
+Specialized radix sort
+ 
+Algo:
+ 
+* Let A be an array of integers to be sorted
+* Create B, a second array whose size is maximum value in A
+* Put elements from A into B using value as an index into B
+* Back Copy in order into A
+ 
+Advantages: time complexity of order O(n)
+Disadvantage: lots of space, problem with duplicates
+ 
+ 
+* Exhausting testing is not always an option
+Example: suppose one has a test a 32 bit adder
+so there are (2^32) * (2^32) i.e. 16 billion * 10^9 inputs available
+Assuming m/c test billion samples in one second it takes 500 years!
+ 
+ 
+**** String related
+0) Reverse string in place
+tricky: reverse the words in a sentence
+such as "The house is blue" should becomes "blue is house The"
+ 
+First part of question can be handled by taking two pointers,
+one from the start of string and then second from end, swapping
+their contents and incrementing start and decrementing end pointers
+as long as end_ptr > start pointer.
+ 
+The tricky part of reversing the words in sentences can be done
+by first reversing the whole sentence e.g.
+"eulb si esuoh ehT" in above example and then
+reversing each word separately.
+ 
+1) finding if given pattern is present in a given text
+ 
+Crude way of searching pattern P (size m) in text T(size n) is as follows
+ 
+for (i=0; i<(n-m); i++) {
+for (j=0; j<m; j++) {
+if (P[j] != T[j+i])
+break
+}
+if (j == m)
+return i; //return the start position of pattern
+}
+ 
+// Couldn't found the pattern in text
+return -1;
+ 
+Time complexity of above is O(m*n)
+ 
+Above algorithm is not very efficient so there are various
+algorithm such as
+ 
+Rabin-Karp (RK) - based on comparing the hash values.
+The RK exploit the fact that if two strings are same
+then their hash values will also be equal.
+ 
+So, basically one compute the hash value of pattern P
+and then start making substrings (with length of pattern P)
+in Text T, compute their hash value and then compare from
+hash value of pattern P.
+ 
+If hash value of substring matches with that of pattern P
+than chances are high that substring and pattern are same
+(this happen due to collision). At this point substring and
+pattern are compaired char by char if all chars match volla
+we found the substring otherwise move to next substring.
+There are two challenges
+ 
+a) Keep the hash value small enough so we can store
+in int or long. The solution is mod.
+ 
+b) How to avoid lengthy calculation of hash value of each substring.
+The solution is use rolling hash function in which hash value of next
+substring can be derived from its predecessor.
+ 
+Check http://courses.csail.mit.edu/6.006/spring11/rec/rec06.pdf
+ 
+Knuth-Mossis-Pratt (KMP) - Based on skipping
+Boyer-Moore string searching algorithm
+ 
+* Bloom Filter: This will quickly test membership in a large set using
+multiple hash functions into single array of bits.
+False positive are possible but false negative are not.
+Again elements can be added to the set but can not removed
+(though counting bloom filter can solve this).
+Multiple hash function can be produced following way
+say f1 and f2 are two independent hash functions then
+( f1(x) + i * f2(x) ) mod m where m is prime number
+can be new hash function.
+Check more on wikipedia for Bloom and counting Bloom functions.
+ 
+String search using automata: http://www.ics.uci.edu/~eppstein/161/syl.html
+ 
+* Longest Common Subsequence (LCS) problem
+Some applications of the LCS problem include:
+ 
+o Searching for proteins with similar DNA sequences: DNA sequences (genes) can
+be represented as sequences of four letters ACGT, corresponding to the
+four submolecules forming DNA. When biologists find a new sequence,
+they typically want to know what other sequences it is most similar to.
+One way of computing how similar two sequences are is to find the length
+of their longest common subsequence.
+ 
+o Approximate string matching like spell checkers.
+ 
+o File comparison (used in diff, CVS, source comparer, cheater finder, plagiarism detection).
+ 
+ 
+Pseudo-code shows bottom-up dynamic programming:
+ 
+m <- LENGTH[X];
+n <- LENGTH[Y];
+for i <- 1 to m, do c[i,0] <-0;
+for j <- 0 to n, do c[0,j] <-0;
+back <- c;// backtracking array
+ 
+for i <0 to m, do {
+for j < 0 to n do {
+if (x[i] = y[j]) {
+c[i,j] <- c[i-1, j-1]+1;
+back[i,j] <- "UP&LEFT";
+}
+else if (c[i-1,j] >= c[i,j-1]) {
+c[i,j] <- c[i-1,j];
+back[i,j] <- "UP";
+}
+else
+c[i,j] <- c[i,j-1];
+back[i,j] <- "LEFT";
+}
+}
+return c and back
+ 
+Getting the subsequence itself
+------------------------------
+ 
+int i<-m, j <- n,
+score <- c[m,n];
+string lcs=empty;
+// Trace the backtracking matrix.
+ 
+while (i >0 || j>0)
+{
+<B>if</B> (back[i, j] = "UP&LEFT")
+{
+i--;
+j--;
+ 
+lcs=X[i] + lcs;
+}
+else if( back[i,j] = UP )
+i--;
+ 
+else if ( back[i,j] = LEFT )
+j--;
+}
+ 
+return score and lcs;
+ 
+*** General String related problems
+1. Anagram related
+Find out if two strings s1 and s2 are anagram?
+Approach-1: Sort out the two strings s1 and s2 (merge sort takes n log n time to sort each string) and then compare letter by letter.
+ 
+Approach-2: Make a histogram i.e. count the frequency of each alphabet in each string and then compare the two histograms. They need to be exactly same for strings to be anagram.
+ 
+Approach-3: Have a list of unique prime numbers (one for each character in alphabet), compute a hash using each character maps to unique prime number. If the hash for two strings is same they will be anagram.
+ 
+2. Palindrome related
+Check if string is palindrome
+Find out longest palindrome in given text (hint - dynamic programming)
+ 
+3. Is given string/pattern is substring in given text
+ 
+4. Find out longest common sub string
+ 
+5. Is given string/pattern is sub sequence in given text
+ 
+Suppose s1 is the text and we need to find out if s2 is subsequence of s1
+is_subsequence(char *s1, char *s2) {
+ 
+if (*s2 == `\0`)    return 1;  //We reach to end of sub sequence!!!
+ 
+// We have not exhausted all the characters of s2 and reach to end of text
+// So, s2 can’t be sub-sequence of s1    
+if (s1 == `\0`) 
+        return 0;     
+}
+ 
+if (*s1 == *s2) {
+// find a match so move to next character position
+    return (is_subsequence(++s1, ++s2));
+}
+ 
+return (is_subsequence(++s1, s2));
+ 
+ 
+6. Longest common subsequence between two strings and its length
+(check the http://www.ics.uci.edu/~eppstein/161/960229.html) 
+ 
+ 
+**** Seven Bridges of Königsberg
+Each node should have even arc except starting and ending node.
+So, if starting and ending nodes are same, there should be only
+on node (at the max), which can have odd number of arcs.
+ 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Microsoft
+=======
+1. Sorting Algorithms
+2. Link list related such as reverse the single link list, find the mid element
+ 
+3. Common ancestor of two arbitrary nodes in binary tree (this is not BST)
+ 
+4. Longest common palindromic substring
+(use dynamic programming technique)
+ 
+5. Divide an unsorted array into two equal arrays whose difference of sum is minimum
+(This is NP  problem which means it can not be solved in polynomial time but given solution can be verified in polynomial time)
+ 
+Hint: try the greedy algorithm and  Kamarkar-Karp  but it will not guarantee the solution. Only Brute force way (which is 2^n time complexity as one can partition n nodes in 2^n different sequence of two)
+ 
+Read 
+1. http://chinmaylokesh.wordpress.com/2011/02/10/balanced-partition-problem-finding-the-minimized-sum-between-two-partitions-of-a-set-of-positive-integers/
+2. http://www.americanscientist.org/issues/id.3278,y.0,no.,content.true,page.1,css.print/issue.aspx
+ 
+http://www.geeksforgeeks.org/tag/microsoft/
+http://www.geeksforgeeks.org/microsoft-interview-set-8/
+ 
+6. How to do in place matrix transposition
+(http://en.wikipedia.org/wiki/In-place_matrix_transposition)
+ 
+7. Find out if two strings are anargam
+1. Keep a histogram for each string and compare them 
+ 
+    We need to assume that character set is ANSI
+ 
+    int histo[256];
+    for (i=0; s1[i]!= ‘\0’ && s2[i] != ‘\0’; i++) {
+        histo[s1[i]]++;
+        histo[s2[i]]--;
+    }
+    if s1[i] != `\0’ or s2[i] != `\0’ then it implies that control reaches to end of the one string only => two strings of different length => two strings are not anagram
+ 
+    Now if all member of histo array are zero then strings are anagrams
+ 
+    for loop run for n (length of string) and there are two operation in the loop = 2n
+    loop through histogram to check member is zero take n
+    Total time complexity O(3n) = O(n)
+    Space required by histo is n = O(n)
+    We have avoided strlen to save one scan 
+ 
+    instead of histogram use sum
+    sum = 0;
+    for (i=0; s1[i] != `\0` && s2[i] != `\0`; i++) {
+        sum += s1[i];
+        sum -= s2[i];
+    }
+if (s1[i] != `\0` || s2[i] != `\0’`)
+    s1 and s2 are not anagram;
+if sum == 0 => anagram (This may give false positive for example cf and bg both have same sum but they are not anagram)
+else these strings are not anagram
+ 
+8. Find the contiguous subarray within a one-dimensional array of numbers (containing at least one positive number) which has the largest sum. For example, for the sequence of values −2, 1, −3, 4, −1, 2, 1, −5, 4; the contiguous subarray with the largest sum is 4, −1, 2, 1, with sum 6.
+ 
+The linear time algorithm was found by Jay Kadane of Carnegie-Mellon University (Bentley 1984) http://www.algorithmist.com/index.php/Kadane%27s_Algorithm
+ 
+prevMaxSum = minus infinity
+prevMaxStart = prevMaxEnd = 1 //start and end position of previous sequence
+ 
+currMaxSum = 0
+curMaxStart = curMaxEnd = 1 //start and end position of current sequence
+ 
+for curMaxEnd := 1 to N
+ 
+    curMaxSum += A[curMaxEnd]
+ 
+    if (curMaxSum > prevMaxSum) {
+        prevMaxSum = curMaxSum
+        prevMaxStart = curMaxStart
+        prevMaxEnd = curMaxEnd
+    }
+ 
+    if (curMaxSum < 0) {
+        //if curMaxSum dropped below 0
+        curMaxSum = 0
+        curMaxStart = curMaxEnd+1
+    }
+ 
+* How gdb or debugger implements breakpoints
+With the support of Hardware. CPU has few internal registers which are dedicated for this purpose. User write the address where (s)he likes to set the breakpoints in these registers. CPU compare the value in these reg with that of PC and raise the exception which debugger catch.
+Second approach is software way. In this approach debugger replaced the instruction (in text segment) at specific location by trap. when control come to at this location where original instruction was replaced by “trap” it caused an exception which can be further catch by debugger. 
+Linux use ptrace system call to track a process. Basically, debugger fork a child process which will execute the ptrace system call and then exec the program to be traced. The parent process (the debugger) execute the wait system call and take action based on status returns by wait.
+ 
+ 
+*  C language characteristics and their impact on security
+ 
+Undefined Behavior: The ISO/IEC 9899:2011 standard does not impose any requirements such as 
+    1. dereferencing the NULL pointer
+        - Consider the following code
+ 
+
+
+
+
+
+void contains_null_check(int *P) {
+  int dead = *P;  //dead code
+ 
+  if (P == 0) 	
+ 	return;  
+  *P = 4;
+}
+ 
+There are two possibilities
+Compiler run the “dead code optimization”  and remove it. In that case function will indeed check for NULL. However if compiler see that p is being dereferenced so check for null is redundant so it can optimized the null check and that case we will notice undefined behaviour when “*p=4”. 
+(http://blog.llvm.org/2011/05/what-every-c-programmer-should-know_14.html) 
+ 
+    2. Write in array after or before valid index
+    3. Write in string literals
+    4. Signed int overflow
+ 
+Unspecified Behaviour: The standards have more than one possibilities but imposes no requirement on which is chosen in any instance.
+    - The order in which arg to a function are evaluated.
+ 
+Implementation defined  Behaviour: Unspecified behaviour where implementation document how the choice is made.
+    - The propagation of the higher-order bit when signed integer is shifted right.
+ 
+There are CERT C Programming Language Secure Coding Standard
+(https://www.securecoding.cert.org/confluence/display/c/CERT+C+Coding+Standard)
+ 
+ 
+ 
+ 
+some interesting interview question related with ip world
+* Name few private ip address range or name few ip addresses which router never see
+    10.0.0.0 - 10.255.255.255,
+    Number of addresses: 16 *1024 * 1024 order of 16 million
+    CIDR 10.0.0.0/8
+
+    172.16.0.0 - 172.31.255.255
+    Number of addresses: 1024 * 1024 i.e. order of one million
+    CIDR 172.16.0.0/12
+
+    192.168.0.0 - 192.168.255.255
+    Number of addresses: 16 * 1024 i.e. order of 64 thousand
+
+* How to convert dotted ip string to number and vice versa
+    Say ip number is 192.168.2.3
+    so think of it four octets delimited by dot
+    Remove the dot and think of it an integer stored in four octets
+    Now starting left, first octet position value is 256*256*256
+    second octet from left has a position value of 256*256
+    third octet has position value of 256
+    and fourth octet has 1 as position value
+    i.e. 192*256*256*256 + 168*256*256 + 2*256 +3
+
+    The c strtok lib call can be used to get the various octets
+
+    Simple program to convert could be as follows
+
+#include <stdio.h>
+#include <string.h>
+#include <arpa/inet.h>
+main(int argc, char **argv)
+{
+    if (argc != 2) {
+        printf("%s <dot notation ip address>\n", argv[0]);
+        return;
+    }
+
+    int num = 0;
+    char *token;
+
+    token = strtok(argv[1], ".");
+    while (token) {
+        printf("current token: (%s) number is (%d)\n", token, num);
+        num = (num<<8) + atoi(token);
+        ("new number is (%d) ", num);
+        token = strtok(NULL, ".");
+        if (token) printf("token is (%s)\n", token);
+    }
+
+    printf("Final number is (%d) (0x%x)\n", num, num);
+    printf("final num after ntohl is (%d) (0x%x)\n", ntohl(num), ntohl(num));
+}
+
+* How to convert a ip number (in integer form) to dot separated notation
+
+* How to find out the smallest and largest ip address for given CIDR
+ Say given CIDR address is 192.168.2.3/24
+  i.e. first 24 bits in ip address will
+  be fixed and last (32-24) bits can vary from all zeroes to all ones
+
+  So, one approach could be find out a mask whose first 24 bits are 1 and
+  remaining (32-24) bits are 0. Apply(Bit AND) such mask on the integer corresponding to
+  ip address to get the minimum.
+
+  To get the maximum, find out a mask whose first 24 bits are 0 and last (32-24)
+  bits are 1. Add this mask in minimum ip address to get the maximum ip address
+  in the CIDR.
+
+  (2 ^ (32-24)) - 1 gives a number where first 24 bits are 0 and last (32-24) bits are all 1
+  Taking a negation on such number will a mask first 24 bits are 1 and last
+  (32-24) bits are zero. So this mask could be used to find out the minimum when
+  AND with ip number.
+
+  Once we have minimum and maximum integer number they can be converted back to
+  dot notation.
+

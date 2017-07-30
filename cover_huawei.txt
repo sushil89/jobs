@@ -1,0 +1,29 @@
+
+Thursday, July 6, 2017
+
+Hiring Manager
+Huawei Technologies Canada Co., Ltd.
+19 Allstate Parkway
+4th Floor Markham, Ontario, L3R 5A4
+CANADA
+
+RE: Embedded Software Engineer/Job no. 670155
+
+Dear Hiring Manager,
+
+This letter is to express my interest in your posting on www.jobbank.gc.ca for Embedded Software Engineer. With a Bachelor’s degree in Technology in Computer Sciences and Engineering and ten plus years of international experience in developing, enhancing, and maintaining complex projects using C language in areas such as device driver, Edge router, Industrial firewall and Digital Switching System, I am confident that I will be an asset to Huawei research and development team.
+
+My background includes extensive 'C' programming experience in Real-time operating system and embedded environment using the Waterfall as well as Agile methodologies conforming to ISO:9001 and CMM standards as
+following:
+
+Most recently while working with GE digital, I enhanced and maintained Linux based firewall software through writing packet sniffer for industrial space, hardening Deep Packet Inspection (DPI Engine) code and strengthening the standard protocol to avoid potential evasions and vulnerabilities.
+
+During my tenure with Ericsson Canada, I specialized in development of large scale embedded software in B-RAS (Broadband Remote Access Server) which included, migrating UNIX applications from 32-bit IBM Power PC platform to 64-bit Broadcom MIPS processor for next generation controlled card.
+
+While working with Lucent Technologies and Center for Development of Telematics (C-Dot), I developed expertise in UNIX kernel code in areas such as writing device driver, defect fixing in complex multi-processor kernel (Single Instruction Multiple Data), feature augmentations and performance enhancements in UNIX SVR2.0 code base.
+
+In conclusion, I am confident that with my experiences in developing within UNIX environment and familiarity with the Software development life cycle alongside my strong communication skills and my ability to prioritize and work multiple projects will allow me to thrive with Huawei.  Thank you for your consideration and I look forward to hearing from you soon.
+
+Sincerely,
+Sushil Agarwal
+Attached: Resume

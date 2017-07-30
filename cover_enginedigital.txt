@@ -1,0 +1,29 @@
+To,
+
+Hiring Manager,
+#404-717 West Pender Street
+Vancouver, BC V6C 1G9
+Canada
+
+RE: Back-End Developer
+
+Please find enclosed mine resume for Back-End Developer position. I hold Bachelor of Technology degree in Computer Science and Engineering and topper of 1989 batch. I have many years of industry experience in developing, enhancing, maintaining complex and large projects using C language in area such as UNIX kernel, Edge router, Industrial firewall and software porting. 
+
+Following are some of the high notes of my skills applicable to this job 
+
+My background includes extensive 'C' programming experience in Real-time operating system (RTOS) and embedded environment. I have solid understanding of the full software product life cycle conforming to ISO:9001 and CMM standards.
+
+Most recently, I enhanced and maintained firewall software which include writing packet sniffer for industrial space, Hardened Deep Packet Inspection (DPI Engine) code and Strengthened the standard protocol to avoid potential evasion/vulnerability.
+
+While working with Redback Networks, I have specialized in large scale embedded software development in B-RAS(Broadband remote access server) which include migrated UNIX applications from 32-bit IBM Power PC platform to 64-bit Broadcom MIPS processor for next generation Cross connect route processor controller card.
+
+Another area of my expertise is UNIX kernel including feature enhancements, writing device driver and defect fixing in complex multi-processor kernel (Single instruction multiple data). Additionally, championed performance enhancements in UNIX SVR2.0 code base during my tenure with Centre for development of telematics.
+  
+Last, but certainly not least, I have strong customer support skills including but not limited to excellent oral and written proficiency, handling and prioritizing multiple tasks and work under pressure.
+
+Please let me know should you have any further question about any of above skills.
+
+Thanks
+
+Sincerely,
+Sushil Agarwal
